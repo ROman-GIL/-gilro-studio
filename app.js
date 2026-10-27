@@ -8,6 +8,8 @@ let ctx, beatBuffer, beatLabel = '', beatSource = null,
     recordChunks = [], recording = false, tracks = [],
     previewSource = null, previewAudio = null;
 
+let countdownActive = false;
+
 const fmt = t => {
   t = Math.max(0, Math.floor(t || 0));
   return String(Math.floor(t / 60)).padStart(2, '0')
@@ -45,7 +47,9 @@ function stopPreview() {
 }
 
 async function loadBeat(blob, name) {
-  if (recording) return status('녹음을 먼저 종료하세요.');
+  if (recording || countdownActive) {
+    return status('녹음을 먼저 종료하세요.');
+  }
 
   haltBeat();
   stopPreview();
@@ -70,7 +74,9 @@ async function loadBeat(blob, name) {
 }
 
 function startBeat(at = pausedAt) {
-  if (!beatBuffer) return status('비트를 먼저 선택하세요.');
+  if (!beatBuffer) {
+    return status('비트를 먼저 선택하세요.');
+  }
 
   haltBeat();
 
@@ -106,18 +112,20 @@ function pauseBeat() {
 }
 
 $('play').onclick = async () => {
+  if (recording || countdownActive) return;
   await audio().resume();
   playing ? pauseBeat() : startBeat();
 };
 
 $('reset').onclick = () => {
+  if (recording || countdownActive) return;
   pauseBeat();
   pausedAt = 0;
   updateClock();
 };
 
 $('seek').oninput = e => {
-  if (!beatBuffer || recording) return;
+  if (!beatBuffer || recording || countdownActive) return;
 
   const p = beatBuffer.duration * Number(e.target.value) / 1000;
   const was = playing;
@@ -182,17 +190,19 @@ async function loadCatalog() {
   }
 }
 
-// ★ 핵심 수정: GitHub Pages에서 실제 MP3 불러오기
+// GitHub Pages에서 비트 파일 불러오기
 $('beats').onchange = async e => {
   const b = window.catalog?.find(x => x.id === e.target.value);
   if (!b) return;
 
+  if (recording || countdownActive) {
+    return status('녹음을 먼저 종료하세요.');
+  }
+
   status('비트를 불러오는 중...');
 
   try {
-    // GitHub Pages의 beats 폴더에서 파일 가져오기
     const audioUrl = 'beats/' + encodeURIComponent(b.name);
-
     const r = await fetch(audioUrl);
 
     if (!r.ok) {
@@ -200,7 +210,6 @@ $('beats').onchange = async e => {
     }
 
     const blob = await r.blob();
-
     await loadBeat(blob, b.name);
 
   } catch (e) {
@@ -211,15 +220,63 @@ $('beats').onchange = async e => {
   }
 };
 
+// ============================================
+// 녹음 카운트다운
+// ============================================
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+async function runCountdown() {
+  const overlay = $('countdownOverlay');
+  const number = $('countdownNumber');
+
+  // HTML에 카운트다운 요소가 없으면 상태창으로 표시
+  if (!overlay || !number) {
+    for (const text of ['3', '2', '1']) {
+      status('녹음 준비 중... ' + text);
+      await wait(1000);
+    }
+    status('GO!');
+    return;
+  }
+
+  overlay.hidden = false;
+
+  for (const text of ['3', '2', '1']) {
+    number.textContent = text;
+    status('녹음 준비 중... ' + text);
+    await wait(1000);
+  }
+
+  number.textContent = 'GO!';
+
+  setTimeout(() => {
+    overlay.hidden = true;
+  }, 450);
+}
+
+// ============================================
 // 구간별 녹음
+// ============================================
+
 $('record').onclick = async () => {
-  if (!beatBuffer) return status('비트를 먼저 선택하세요.');
-  if (recording) return;
+  if (!beatBuffer) {
+    return status('비트를 먼저 선택하세요.');
+  }
+
+  if (recording || countdownActive) return;
+
+  countdownActive = true;
+
+  $('record').disabled = true;
+  $('play').disabled = true;
+  $('reset').disabled = true;
 
   try {
     const c = audio();
     await c.resume();
 
+    // 카운트다운 전에 마이크 권한 확보
     stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: false,
@@ -228,7 +285,7 @@ $('record').onclick = async () => {
       }
     });
 
-    let mime = [
+    const mime = [
       'audio/webm;codecs=opus',
       'audio/mp4',
       'audio/webm'
@@ -242,7 +299,9 @@ $('record').onclick = async () => {
     recordChunks = [];
 
     recorder.ondataavailable = e => {
-      if (e.data.size) recordChunks.push(e.data);
+      if (e.data.size) {
+        recordChunks.push(e.data);
+      }
     };
 
     recorder.onstop = async () => {
@@ -266,7 +325,9 @@ $('record').onclick = async () => {
         status('녹음 구간을 추가했어요.');
 
       } catch (e) {
-        status('이 기기의 녹음 형식을 읽지 못했어요: ' + e.message);
+        status(
+          '이 기기의 녹음 형식을 읽지 못했어요: ' + e.message
+        );
 
       } finally {
         stream?.getTracks().forEach(t => t.stop());
@@ -274,24 +335,51 @@ $('record').onclick = async () => {
 
         $('record').disabled = false;
         $('stop').disabled = true;
+        $('play').disabled = false;
+        $('reset').disabled = false;
+
         recording = false;
       }
     };
 
-    if (!playing) startBeat();
+    // 재생 중이면 현재 위치에서 일시정지
+    if (playing) {
+      pauseBeat();
+    }
 
+    // 3, 2, 1 카운트다운
+    await runCountdown();
+
+    // 녹음과 비트를 같은 구간에서 시작
     recordStart = position();
+
     recorder.start(250);
     recording = true;
 
-    $('record').disabled = true;
+    startBeat(recordStart);
+
     $('stop').disabled = false;
 
     status('● 녹음 중... 원하는 곳에서 종료하세요.');
 
   } catch (e) {
     stream?.getTracks().forEach(t => t.stop());
-    status('마이크 사용 실패: ' + e.message + ' (HTTPS 또는 localhost 필요)');
+    stream = null;
+
+    const overlay = $('countdownOverlay');
+    if (overlay) overlay.hidden = true;
+
+    $('record').disabled = false;
+    $('play').disabled = false;
+    $('reset').disabled = false;
+
+    status(
+      '마이크 사용 실패: ' + e.message
+      + ' (HTTPS 또는 localhost 필요)'
+    );
+
+  } finally {
+    countdownActive = false;
   }
 };
 
@@ -299,11 +387,16 @@ $('stop').onclick = () => {
   if (recorder?.state === 'recording') {
     recorder.stop();
     pauseBeat();
+
+    $('stop').disabled = true;
     status('녹음 처리 중...');
   }
 };
 
+// ============================================
 // 녹음 트랙 관리
+// ============================================
+
 function renderTracks() {
   const root = $('tracks');
   root.replaceChildren();
@@ -323,6 +416,7 @@ function renderTracks() {
     row.className = 'row';
 
     const name = document.createElement('strong');
+
     name.textContent =
       t.name + ' · ' + fmt(t.start)
       + ' 시작 · ' + fmt(t.buffer.duration) + ' 길이';
@@ -341,7 +435,10 @@ function renderTracks() {
 
     input.type = 'checkbox';
     input.checked = t.enabled;
-    input.onchange = () => t.enabled = input.checked;
+
+    input.onchange = () => {
+      t.enabled = input.checked;
+    };
 
     chk.append(input, '사용');
     row.append(name, chk, del);
@@ -350,6 +447,7 @@ function renderTracks() {
     shift.textContent = '시작 위치(초) ';
 
     const number = document.createElement('input');
+
     number.type = 'number';
     number.min = '0';
     number.step = '.05';
@@ -359,8 +457,12 @@ function renderTracks() {
     number.onchange = () => {
       t.start = Math.max(
         0,
-        Math.min(beatBuffer.duration, Number(number.value) || 0)
+        Math.min(
+          beatBuffer.duration,
+          Number(number.value) || 0
+        )
       );
+
       renderTracks();
     };
 
@@ -370,13 +472,18 @@ function renderTracks() {
   });
 }
 
+// ============================================
 // 믹싱 슬라이더
+// ============================================
+
 for (const [id, label] of [
   ['beatGain', 'bgv'],
   ['vocalGain', 'vgv'],
   ['reverb', 'rv']
 ]) {
-  $(id).oninput = e => $(label).textContent = e.target.value + '%';
+  $(id).oninput = e => {
+    $(label).textContent = e.target.value + '%';
+  };
 }
 
 // 자동 믹싱 프리셋
@@ -396,7 +503,10 @@ $('auto').onclick = () => {
   status('기본 랩 믹싱 프리셋을 적용했어요.');
 };
 
+// ============================================
 // 믹싱 오디오 그래프
+// ============================================
+
 function mixGraph(c) {
   const master = c.createGain();
   master.gain.value = .85;
@@ -435,6 +545,7 @@ function mixGraph(c) {
 
   const feedback = c.createGain();
   feedback.gain.value = .18;
+
   delay.connect(feedback).connect(delay);
 
   const wet = c.createGain();
@@ -446,14 +557,24 @@ function mixGraph(c) {
   return { beatGain, hp };
 }
 
+// ============================================
 // 오프라인 믹싱
+// ============================================
+
 async function renderMix() {
-  if (!beatBuffer) throw Error('비트를 먼저 선택하세요.');
+  if (!beatBuffer) {
+    throw Error('비트를 먼저 선택하세요.');
+  }
 
   const rate = 44100;
   const length = Math.ceil(beatBuffer.duration * rate);
 
-  const offline = new OfflineAudioContext(2, length, rate);
+  const offline = new OfflineAudioContext(
+    2,
+    length,
+    rate
+  );
+
   const graph = mixGraph(offline);
 
   function source(buf, dest, start) {
@@ -474,12 +595,18 @@ async function renderMix() {
   return await offline.startRendering();
 }
 
+// ============================================
 // WAV 파일 생성
+// ============================================
+
 function wav(buffer) {
   const channels = 2;
   const n = buffer.length;
 
-  const ab = new ArrayBuffer(44 + n * channels * 2);
+  const ab = new ArrayBuffer(
+    44 + n * channels * 2
+  );
+
   const v = new DataView(ab);
 
   const str = (o, s) => {
@@ -522,10 +649,15 @@ function wav(buffer) {
     }
   }
 
-  return new Blob([ab], { type: 'audio/wav' });
+  return new Blob([ab], {
+    type: 'audio/wav'
+  });
 }
 
+// ============================================
 // 미리듣기 및 다운로드
+// ============================================
+
 let resultUrl = null;
 
 async function build() {
@@ -533,7 +665,9 @@ async function build() {
 
   const blob = wav(await renderMix());
 
-  if (resultUrl) URL.revokeObjectURL(resultUrl);
+  if (resultUrl) {
+    URL.revokeObjectURL(resultUrl);
+  }
 
   resultUrl = URL.createObjectURL(blob);
   $('result').src = resultUrl;
@@ -558,12 +692,14 @@ $('export').onclick = async () => {
     const a = document.createElement('a');
 
     a.href = url;
+
     a.download =
       'GILRO_STUDIO_'
       + (beatLabel.replace(/\.[^.]+$/, '') || 'mix')
       + '.wav';
 
     a.click();
+
   } catch (e) {
     status('내보내기 실패: ' + e.message);
   }
