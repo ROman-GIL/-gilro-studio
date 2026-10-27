@@ -1,26 +1,29 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>GILRO STUDIO 3.0</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>GILRO STUDIO 3.2</title>
 <style>
 :root{font-family:system-ui,'Malgun Gothic',sans-serif;color:#f3f3fa;background:#0c0e15}*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{background:#303449;color:white;border:1px solid #494e64;border-radius:9px;padding:10px 13px;cursor:pointer;touch-action:manipulation}button:disabled{opacity:.4}button.hot{background:#ad7aff;color:#170c27;font-weight:800}button.rec{background:#a72e4b}button.on{outline:2px solid #d4adff}header{padding:18px 20px;background:#181a27;border-bottom:1px solid #383c50}h1{font-size:24px;letter-spacing:.12em;margin:0}header small{color:#b9b3c9}main{max-width:1440px;margin:auto;padding:12px}.bar,.panel{background:#191c29;border:1px solid #353a50;border-radius:12px;padding:12px;margin-bottom:12px}.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}select,input[type=number]{background:#0f111c;color:white;border:1px solid #4b5065;border-radius:8px;padding:10px}input[type=range]{accent-color:#ad7aff}#clock{font-size:22px;font-variant-numeric:tabular-nums;color:#d7b5ff;margin:0 12px}.muted{color:#b1b5c8;font-size:13px}#status{color:#d7b5ff;min-height:22px}.timelineShell{overflow-x:auto;overflow-y:hidden;border:1px solid #3b4056;border-radius:10px;background:#10121b;touch-action:pan-x}.timeline{min-width:650px}.ruler,.lane{display:flex;min-height:82px;border-bottom:1px solid #32364b}.ruler{min-height:36px}.head{width:165px;flex:none;padding:10px;background:#222636;border-right:1px solid #444960}.body{flex:1;position:relative;min-width:0;overflow:hidden;touch-action:pan-y}.ruler .body{cursor:crosshair}.lane canvas{width:100%;height:82px;display:block}.lane .body{cursor:crosshair}.lane.selected .head{background:#37304e}.name{font-weight:750;display:block;margin-bottom:5px}.small{font-size:12px;padding:4px 8px}.badge{display:inline-block;color:#d6b6ff}.rangeBox{display:flex;align-items:center;gap:6px;flex-wrap:wrap}#overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#000a;z-index:10;font-size:min(30vw,130px);font-weight:900;color:#d5acff;pointer-events:none}#overlay.show{display:flex}#result{width:100%;margin-top:8px}footer{padding:15px;color:#9299b1;font-size:12px}@media(max-width:700px){.head{width:125px;padding:7px}.small{padding:5px}.lane,.lane canvas{min-height:76px;height:76px}#clock{font-size:18px}button{padding:10px}}
+
+.mixControls{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px;margin-top:12px}.mixControls label{display:flex;flex-direction:column;gap:5px;background:#111521;padding:10px;border-radius:9px;font-size:13px}.mixControls output{color:#d9b7ff;font-weight:700}.mixControls input{width:100%}details.expert{margin:12px 0;background:#121624;border:1px solid #41465e;border-radius:10px;padding:12px}details.expert summary{cursor:pointer;font-weight:800;color:#e0c5ff}.mixNote{font-size:12px;color:#aab4ce;margin-top:8px}.meter{font-variant-numeric:tabular-nums;color:#92e1c9;font-size:13px}
 </style></head><body>
-<header><h1>GILRO STUDIO <span class="badge">3.0 BETA</span></h1><small>YOUR VOICE. YOUR MUSIC. · 학생용 멀티트랙 녹음실</small></header>
+<header><h1>GILRO STUDIO <span class="badge">3.2 BETA</span></h1><small>YOUR VOICE. YOUR MUSIC. · 학생용 멀티트랙 녹음실</small></header>
 <main>
 <section class="bar"><div class="row"><select id="beats"><option value="">비트를 선택하세요</option></select><button id="refresh">비트 새로고침</button><label class="muted">직접 선택 <input type="file" id="beatFile" accept="audio/*"></label></div><div class="muted" id="beatName">비트를 먼저 선택하세요.</div></section>
 <section class="bar"><div class="row"><button id="play">▶ 재생</button><button id="stop">■ 정지</button><button id="record" class="rec">● 자유 녹음</button><button id="punch" class="hot">● 선택 구간 녹음</button><button id="undo">↶ 실행 취소</button><strong id="clock">00:00.0</strong><label>확대 <input type="range" id="zoom" min="1" max="8" value="1"></label></div><p class="muted">🎧 유선 이어폰 권장 · 타임라인 눈금 클릭: 이동 · 빈 보컬 영역 드래그: 구간 선택 · 녹음 블록 드래그: 위치 이동</p><div class="rangeBox"><label>선택 시작(초) <input id="rangeStart" type="number" min="0" step="0.1" value="0" style="width:85px"></label><label>끝(초) <input id="rangeEnd" type="number" min="0" step="0.1" value="10" style="width:85px"></label><button id="clearRange" class="small">선택 해제</button><button id="split" class="small">재생 위치에서 자르기</button><button id="deleteRegion" class="small">선택 블록 삭제</button></div><div id="status">비트를 선택해 주세요.</div></section>
 <section class="panel"><div class="row" style="justify-content:space-between"><strong>🎚️ 멀티트랙 타임라인</strong><button id="addTrack" class="small">＋ 보컬 트랙 추가</button></div><div class="timelineShell"><div class="timeline" id="timeline"><div class="ruler"><div class="head">트랙 / 시간</div><div class="body" id="ruler"></div></div><div id="lanes"></div></div></div><p class="muted">M: 음소거 · S: 솔로 · R: 녹음 대상 · 블록을 선택한 뒤 삭제/자르기 가능. 태블릿에서는 가로 화면을 권장합니다.</p></section>
-<section class="panel"><div class="row"><button id="auto" class="hot">✨ 기본 자동 믹싱</button><label>비트 <input type="range" id="beatGain" min="0" max="150" value="70"></label><label>보컬 <input type="range" id="vocalGain" min="0" max="200" value="120"></label><label>공간감 <input type="range" id="reverb" min="0" max="50" value="12"></label></div><div class="row"><button id="preview">▶ 믹싱 미리듣기</button><button id="export">⬇ WAV 다운로드</button><button id="save">💾 이 기기에 저장</button><button id="restore">📂 저장된 작업 불러오기</button><button id="resetProject">새 프로젝트</button></div><audio id="result" controls></audio><p class="muted">저장은 현재 브라우저의 IndexedDB에 보관됩니다. 학교 공용 태블릿에서는 다른 학생이 불러올 수 있으니 작업 후 새 프로젝트로 정리하세요.</p></section>
-<footer>GILRO STUDIO 3.0 BETA · 녹음 파일은 외부 서버로 업로드하지 않습니다. 테스트용 버전이므로 중요한 녹음은 WAV로 내려받으세요.</footer>
+<section class="panel"><div class="row"><button id="auto" class="hot">✨ 자동 믹싱</button><span class="meter" id="mixReport">보컬을 녹음한 뒤 자동 믹싱을 눌러 주세요.</span></div><p class="mixNote">학생 모드: 자동 믹싱 버튼 하나로 보컬 음량·EQ·압축·비트 밸런스·최종 피크를 정리합니다. 원본 녹음은 변경되지 않습니다.</p><details class="expert" id="expert"><summary>⚙️ 전문가 모드 열기 · 세부 믹싱 조절</summary><div class="mixControls" id="mixControls"><label>비트 음량 <output id="beatGainValue">70%</output><input type="range" id="beatGain" min="0" max="150" value="70" data-unit="%"></label><label>보컬 음량 <output id="vocalGainValue">120%</output><input type="range" id="vocalGain" min="0" max="250" value="120" data-unit="%"></label><label>저음 EQ <output id="lowValue">-2dB</output><input type="range" id="low" min="-12" max="12" value="-2" data-unit="dB"></label><label>중음 EQ <output id="midValue">2dB</output><input type="range" id="mid" min="-12" max="12" value="2" data-unit="dB"></label><label>고음 EQ <output id="highValue">2dB</output><input type="range" id="high" min="-12" max="12" value="2" data-unit="dB"></label><label>컴프레서 강도 <output id="compressValue">55%</output><input type="range" id="compress" min="0" max="100" value="55" data-unit="%"></label><label>치찰음 완화 <output id="deessValue">30%</output><input type="range" id="deess" min="0" max="100" value="30" data-unit="%"></label><label>공간감 <output id="reverbValue">12%</output><input type="range" id="reverb" min="0" max="50" value="12" data-unit="%"></label><label>딜레이 <output id="delayValue">5%</output><input type="range" id="delay" min="0" max="40" value="5" data-unit="%"></label><label>비트 덕킹 <output id="duckValue">18%</output><input type="range" id="duck" min="0" max="60" value="18" data-unit="%"></label></div><div class="row" style="margin-top:10px"><button id="resetMix" class="small">믹싱 설정 초기화</button></div><p class="mixNote">재생 버튼은 편집 확인용 원음 재생입니다. 실제 효과는 아래 「믹싱 미리듣기」와 WAV에 동일하게 적용됩니다.</p></details><div class="row"><button id="preview">▶ 믹싱 미리듣기</button><button id="export">🎵 완성곡 WAV</button><button id="rawVocal">🎤 원본 보컬 WAV</button><button id="mixedVocal">🎚️ 믹싱 보컬 WAV</button><button id="save">💾 프로젝트 파일 저장</button><button id="restore">📂 프로젝트 파일 열기</button><input type="file" id="projectFile" accept=".gilro,application/octet-stream" hidden><button id="resetProject">새 프로젝트</button></div><audio id="result" controls></audio><p class="muted">프로젝트는 .gilro 파일로 내려받습니다. 녹음·편집·비트·믹싱 설정이 포함됩니다. 다른 기기에서도 열 수 있습니다. 저장하지 않고 닫으면 작업이 사라질 수 있습니다.</p></section>
+<footer>GILRO STUDIO 3.2 BETA · 녹음 파일은 외부 서버로 업로드하지 않습니다. 테스트용 버전이므로 중요한 녹음은 WAV로 내려받으세요.</footer>
 </main><div id="overlay"></div><script src="../config.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),status=s=>$('status').textContent=s;
+let dirty=false,projectName="우리들의랩";
 let ac=null,beat=null,beatName='',tracks=[],active=0,regions=[],nextId=1,playhead=0,startedAt=0,playing=false,liveSources=[],mic=null,recorder=null,chunks=[],recording=false,counting=false,selected=null,range=null,undoStack=[],resultUrl=null,drag=null,saveTimer=null;
 const ctx=()=>ac||(ac=new (window.AudioContext||window.webkitAudioContext)());
 const dur=()=>beat?.duration||0, clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
 const time=()=>playing?clamp(ctx().currentTime-startedAt,0,dur()):playhead;
 const fmt=t=>{t=Math.max(0,t);return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}.${Math.floor(t%1*10)}`};
 function snapshot(){undoStack.push({tracks:tracks.map(t=>({...t})),regions:regions.map(r=>({...r})),active,selected});if(undoStack.length>25)undoStack.shift()}
-function mark(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>saveProject(true),2500)}
+function mark(){dirty=true}
 function makeTrack(){const id=nextId++;return {id,name:'VOCAL '+id,mute:false,solo:false,volume:1}}
 function resetTracks(){nextId=1;tracks=[makeTrack(),makeTrack()];tracks.forEach((t,i)=>t.name='VOCAL '+(i+1));active=tracks[0].id;regions=[];selected=null;undoStack=[]}
 function eligible(t){return !t.mute&&(!tracks.some(x=>x.solo)||t.solo)}
@@ -85,22 +88,99 @@ async function beginRecord(punch=false){if(!beat||recording||counting)return sta
 function setButtons(b){$('record').disabled=b;$('punch').disabled=b;$('play').disabled=b}
 function endRecord(){if(recorder?.state==='recording'){recorder.stop();pause();status('녹음 처리 중...')}}
 $('record').onclick=()=>beginRecord(false);$('punch').onclick=()=>beginRecord(true);$('stop').onclick=()=>{if(recording)endRecord();else pause()};
-$('auto').onclick=()=>{$('beatGain').value=70;$('vocalGain').value=120;$('reverb').value=12;status('기본 랩 믹싱 설정 적용')};
+const mixIds=['beatGain','vocalGain','low','mid','high','compress','deess','reverb','delay','duck'];
+const mixDefaults={beatGain:70,vocalGain:120,low:-2,mid:2,high:2,compress:55,deess:30,reverb:12,delay:5,duck:18};
+let autoGain=1, mixBusy=false;
+function settings(){return Object.fromEntries(mixIds.map(k=>[k,+$(k).value]))}
+function applyMix(p){for(const k of mixIds){if(p?.[k]!==undefined)$(k).value=p[k];$(k+'Value').textContent=$(k).value+$(k).dataset.unit}}
+function analyzeVocals(){let sum=0,n=0,peak=0,voiceSecs=0;for(const r of regions){const t=tracks.find(x=>x.id===r.track);if(!t||!eligible(t))continue;const d=r.buffer.getChannelData(0),sr=r.buffer.sampleRate,begin=Math.floor(r.offset*sr),end=Math.min(d.length,Math.floor((r.offset+r.length)*sr));let local=0,count=0;const stride=Math.max(1,Math.floor(sr/8000));for(let i=begin;i<end;i+=stride){const v=d[i]*t.volume;sum+=v*v;n++;peak=Math.max(peak,Math.abs(v));local+=v*v;count++}if(count&&Math.sqrt(local/count)>.008)voiceSecs+=r.length}return {rms:n?Math.sqrt(sum/n):0,peak,voiceSecs}}
+$('auto').onclick=()=>{const a=analyzeVocals();if(!a.rms){status('보컬 녹음이 없어요. 먼저 녹음해 주세요.');return}applyMix(mixDefaults);const target=.13;autoGain=clamp(target/Math.max(a.rms,.003),.45,3.2);const peakSafe=clamp(.78/Math.max(a.peak*autoGain,.01),.35,1);autoGain*=peakSafe;$('mixReport').textContent=`보컬 RMS ${(20*Math.log10(a.rms)).toFixed(1)} dBFS · 자동 보정 ${(20*Math.log10(autoGain)).toFixed(1)} dB · 적용 준비 완료`;status('자동 믹싱 분석 완료! 「믹싱 미리듣기」를 눌러 확인하세요.');mark()};
+$('resetMix').onclick=()=>{applyMix(mixDefaults);autoGain=1;$('mixReport').textContent='믹싱 설정을 초기화했습니다.';mark()};
+for(const k of mixIds)$(k).addEventListener('input',()=>{$(k+'Value').textContent=$(k).value+$(k).dataset.unit;mark()});
 function wav(b){const n=b.length,ab=new ArrayBuffer(44+n*4),v=new DataView(ab);const s=(i,x)=>{for(let j=0;j<x.length;j++)v.setUint8(i+j,x.charCodeAt(j))};s(0,'RIFF');v.setUint32(4,36+n*4,true);s(8,'WAVE');s(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,2,true);v.setUint32(24,b.sampleRate,true);v.setUint32(28,b.sampleRate*4,true);v.setUint16(32,4,true);v.setUint16(34,16,true);s(36,'data');v.setUint32(40,n*4,true);const a=b.getChannelData(0),z=b.getChannelData(1);for(let i=0;i<n;i++)for(let ch=0;ch<2;ch++){const x=clamp((ch?z:a)[i],-1,1);v.setInt16(44+(i*2+ch)*2,x<0?x*32768:x*32767,true)}return new Blob([ab],{type:'audio/wav'})}
-async function renderMix(){if(!beat)throw Error('비트를 먼저 선택하세요.');const rate=44100,off=new OfflineAudioContext(2,Math.ceil(dur()*rate),rate);const master=off.createGain();master.gain.value=.85;master.connect(off.destination);const bg=off.createGain();bg.gain.value=+$('beatGain').value/100;bg.connect(master);const bs=off.createBufferSource();bs.buffer=beat;bs.connect(bg);bs.start(0);
- const comp=off.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=3;comp.connect(master);const hp=off.createBiquadFilter();hp.type='highpass';hp.frequency.value=95;hp.connect(comp);
- const delay=off.createDelay(1);delay.delayTime.value=.12;const wet=off.createGain();wet.gain.value=+$('reverb').value/100*.4;delay.connect(wet).connect(master);hp.connect(delay);
- for(const r of regions){const t=tracks.find(x=>x.id===r.track);if(!t||!eligible(t)||r.start>=dur())continue;const src=off.createBufferSource(),g=off.createGain();src.buffer=r.buffer;g.gain.value=+$('vocalGain').value/100*t.volume;src.connect(g).connect(hp);src.start(r.start,r.offset,Math.min(r.length,dur()-r.start,r.buffer.duration-r.offset))}return off.startRendering()}
-async function build(){status('믹싱 중...');const b=wav(await renderMix());if(resultUrl)URL.revokeObjectURL(resultUrl);resultUrl=URL.createObjectURL(b);$('result').src=resultUrl;status('믹싱 완료');return resultUrl}
+function filter(off,type,freq,gain=0,q=1){const f=off.createBiquadFilter();f.type=type;f.frequency.value=freq;f.Q.value=q;if(type==='peaking'||type==='lowshelf'||type==='highshelf')f.gain.value=gain;return f}
+function duckEnvelope(bg,off,p){if(!p.duck)return;const step=.05,frames=Math.ceil(dur()/step),activity=new Float32Array(frames);for(const r of regions){const t=tracks.find(x=>x.id===r.track);if(!t||!eligible(t))continue;const d=r.buffer.getChannelData(0),sr=r.buffer.sampleRate;const first=Math.max(0,Math.floor(r.start/step)),last=Math.min(frames,Math.ceil((r.start+r.length)/step));for(let i=first;i<last;i++){const from=Math.max(r.start,i*step),to=Math.min(r.start+r.length,(i+1)*step);if(to<=from)continue;const a=Math.floor((r.offset+from-r.start)*sr),b=Math.min(d.length,Math.floor((r.offset+to-r.start)*sr));let sum=0,n=0;for(let j=a;j<b;j+=Math.max(1,Math.floor(sr/4000))){sum+=d[j]*d[j];n++}if(n&&Math.sqrt(sum/n)*t.volume>.016)activity[i]=1}}
+ let smoothed=0;bg.gain.setValueAtTime(p.beatGain/100,0);for(let i=0;i<frames;i++){smoothed+=(activity[i]-smoothed)*(activity[i]>.5?.5:.12);const level=(p.beatGain/100)*(1-p.duck/100*smoothed);bg.gain.linearRampToValueAtTime(level,Math.min(dur(),(i+1)*step))}}
+async function renderMix(mode="full"){if(!beat)throw Error('비트를 먼저 선택하세요.');const p=settings(),rate=44100,off=new OfflineAudioContext(2,Math.max(1,Math.ceil(dur()*rate)),rate);const master=off.createGain();master.gain.value=.87;master.connect(off.destination);
+ const bg=off.createGain();bg.gain.value=p.beatGain/100;bg.connect(master);if(mode==="full"){const bs=off.createBufferSource();bs.buffer=beat;bs.connect(bg);bs.start(0);duckEnvelope(bg,off,p);}
+ const hp=filter(off,'highpass',90),lo=filter(off,'lowshelf',190,p.low),mid=filter(off,'peaking',2400,p.mid,.9),hi=filter(off,'highshelf',6800,p.high-p.deess*.055);hp.connect(lo).connect(mid).connect(hi);
+ const comp=off.createDynamicsCompressor();comp.threshold.value=-10-p.compress*.24;comp.knee.value=18;comp.ratio.value=1+p.compress*.065;comp.attack.value=.008;comp.release.value=.16;hi.connect(comp);comp.connect(master);
+ if(p.reverb){const d1=off.createDelay(.6),d2=off.createDelay(.8),lp=filter(off,'lowpass',3600),wet=off.createGain(),feedback=off.createGain();d1.delayTime.value=.093;d2.delayTime.value=.17;wet.gain.value=p.reverb/100*.32;feedback.gain.value=.28;comp.connect(d1);d1.connect(d2);d2.connect(lp).connect(wet).connect(master);d2.connect(feedback).connect(d1)}
+ if(p.delay){const delay=off.createDelay(.8),wet=off.createGain(),feedback=off.createGain(),lp=filter(off,'lowpass',3500);delay.delayTime.value=.24;wet.gain.value=p.delay/100*.24;feedback.gain.value=.18;comp.connect(delay);delay.connect(lp).connect(wet).connect(master);delay.connect(feedback).connect(delay)}
+ for(const r of regions){const t=tracks.find(x=>x.id===r.track);if(!t||!eligible(t)||r.start>=dur())continue;const length=Math.min(r.length,dur()-r.start,r.buffer.duration-r.offset);if(length<=0)continue;const src=off.createBufferSource(),g=off.createGain();src.buffer=r.buffer;g.gain.value=p.vocalGain/100*t.volume*autoGain;src.connect(g).connect(mode==="raw"?master:hp);if(mode==="raw")g.gain.value=t.volume;src.start(r.start,r.offset,length)}
+ const rendered=await off.startRendering();let peak=0;for(let ch=0;ch<rendered.numberOfChannels;ch++){const d=rendered.getChannelData(ch);for(let i=0;i<d.length;i++)peak=Math.max(peak,Math.abs(d[i]))}const gain=Math.min(1,.89/Math.max(peak,.00001));for(let ch=0;ch<rendered.numberOfChannels;ch++){const d=rendered.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]*=gain}return rendered}
+async function build(){if(mixBusy)throw Error('믹싱이 진행 중입니다.');mixBusy=true;try{status('믹싱 중...');const b=wav(await renderMix());if(resultUrl)URL.revokeObjectURL(resultUrl);resultUrl=URL.createObjectURL(b);$('result').src=resultUrl;status('믹싱 완료');return resultUrl}finally{mixBusy=false}}
 $('preview').onclick=async()=>{try{await build();await $('result').play()}catch(e){status('미리듣기 실패: '+e.message)}};
-$('export').onclick=async()=>{try{const url=await build(),a=document.createElement('a');a.href=url;a.download='GILRO_'+(beatName.replace(/\.[^.]+$/,'')||'mix')+'.wav';a.click()}catch(e){status('다운로드 실패: '+e.message)}};
-function db(){return new Promise((res,rej)=>{const req=indexedDB.open('gilro-v3',1);req.onupgradeneeded=()=>req.result.createObjectStore('projects');req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)})}
-async function saveProject(silent=false){if(!beat||recording)return;try{const d=await db();await new Promise((res,rej)=>{const tx=d.transaction('projects','readwrite');tx.objectStore('projects').put({beat,beatName,tracks,regions,nextId,active,playhead,range},'latest');tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});d.close();if(!silent)status('이 기기에 저장 완료')}catch(e){if(!silent)status('저장 실패(공간 부족 가능): '+e.message)}}
-async function restore(){try{const d=await db(),p=await new Promise((res,rej)=>{const req=d.transaction('projects').objectStore('projects').get('latest');req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});d.close();if(!p)return status('저장된 작업이 없어요.');pause();({beat,beatName,tracks,regions,nextId,active,playhead,range}=p);$('beatName').textContent='선택한 비트: '+beatName;syncRange();draw();status('저장된 작업 복원 완료')}catch(e){status('불러오기 실패: '+e.message)}}
-$('save').onclick=()=>saveProject();$('restore').onclick=restore;
-$('resetProject').onclick=()=>{if(!confirm('현재 작업을 지우고 새로 시작할까요? 저장된 작업은 별도로 남아 있습니다.'))return;pause();beat=null;beatName='';playhead=0;resetTracks();range=null;$('beatName').textContent='비트를 선택하세요.';draw();status('새 프로젝트 준비')};
+$('export').onclick=()=>downloadWav('full');
+$('rawVocal').onclick=()=>downloadWav('raw');
+$('mixedVocal').onclick=()=>downloadWav('vocal');
+async function downloadWav(mode){try{if(recording||counting)throw Error('녹음이 끝난 후 저장하세요.');if(mode!=='full'&&!regions.length)throw Error('보컬 녹음이 없어요.');status('WAV 만드는 중...');const audio=await renderMix(mode),blob=wav(audio);const suffix={full:'완성곡',raw:'원본보컬',vocal:'믹싱보컬'}[mode];downloadBlob(blob,await chooseName(suffix),'wav');status(suffix+' WAV 저장 완료')}catch(e){if(e.message!=='취소')status('다운로드 실패: '+e.message)}}
+function safeName(n){return (n||'우리들의랩').trim().replace(/[\\/:*?"<>|\x00-\x1f]/g,'_').slice(0,90)||'우리들의랩'}
+async function chooseName(kind){const n=prompt(kind+' 저장 파일 이름을 입력하세요. (확장자는 자동으로 붙습니다)',projectName);if(n===null)throw Error('취소');if(!n.trim())throw Error('파일 이름을 입력하세요.');projectName=safeName(n.replace(/\.(gilro|wav)$/i,''));return projectName+(kind==='프로젝트'?'':'_'+kind)}
+function downloadBlob(blob,name,ext){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name+'.'+ext;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
+// 파일 기반 프로젝트: 오디오 샘플을 base64로 직렬화한 뒤 gzip 압축합니다.
+function encodeBuffer(buf){
+ if(!buf)return null;
+ const channels=[];
+ for(let i=0;i<buf.numberOfChannels;i++){
+  const bytes=new Uint8Array(buf.getChannelData(i).buffer,buf.getChannelData(i).byteOffset,buf.length*4);
+  let parts=[];for(let k=0;k<bytes.length;k+=32768){parts.push(String.fromCharCode(...bytes.subarray(k,k+32768)))}
+  channels.push(btoa(parts.join('')));
+ }
+ return {sampleRate:buf.sampleRate,length:buf.length,channels};
+}
+function decodeBuffer(obj){
+ if(!obj||!Array.isArray(obj.channels)||!obj.channels.length||obj.channels.length>8||!Number.isInteger(obj.length)||obj.length<1||obj.length>50000000||obj.sampleRate<8000||obj.sampleRate>192000)throw Error('프로젝트 오디오 데이터가 올바르지 않아요.');
+ const b=ctx().createBuffer(obj.channels.length,obj.length,obj.sampleRate);
+ for(let i=0;i<obj.channels.length;i++){
+  const bin=atob(obj.channels[i]);if(bin.length!==obj.length*4)throw Error('오디오 데이터 길이가 다릅니다.');
+  const bytes=new Uint8Array(bin.length);for(let j=0;j<bin.length;j++)bytes[j]=bin.charCodeAt(j);
+  const samples=new Float32Array(bytes.buffer);b.copyToChannel(samples,i);
+ }
+ return b;
+}
+async function saveProject(){
+ try{
+  if(!beat||recording||counting)throw Error('비트를 선택하고 녹음을 마친 뒤 저장하세요.');
+  const name=await chooseName('프로젝트');status('프로젝트 파일 만드는 중...');
+  const unique=[beat,...new Set(regions.map(r=>r.buffer))];
+  const audios=unique.map(encodeBuffer);
+  const indices=new Map(unique.map((b,i)=>[b,i]));
+  const data={type:'GILRO_STUDIO_PROJECT',version:1,name:projectName,beatName,beatIndex:0,audios,
+   tracks,regions:regions.map(({buffer,...r})=>({...r,audioIndex:indices.get(buffer)})),nextId,active,playhead,range,mix:settings(),autoGain};
+  const json=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const blob=typeof CompressionStream==='function'?await new Response(json.stream().pipeThrough(new CompressionStream('gzip'))).blob():json;
+  downloadBlob(blob,name,'gilro');dirty=false;status('프로젝트 파일 저장 완료 · 다운로드 폴더를 확인하세요.');
+ }catch(e){if(e.message!=='취소')status('프로젝트 저장 실패: '+e.message)}
+}
+async function openProject(file){
+ try{
+  if(!file)return;
+  if(recording||counting)throw Error('녹음이 끝난 후 열어 주세요.');
+  if(dirty&&!confirm('현재 작업의 저장하지 않은 변경 내용이 사라집니다. 계속할까요?'))return;
+  status('프로젝트 읽는 중...');
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  let blob=new Blob([bytes]);
+  if(bytes[0]===31&&bytes[1]===139){if(typeof DecompressionStream!=='function')throw Error('이 브라우저는 압축된 프로젝트를 열 수 없어요.');blob=new Blob([await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()])}
+  const p=JSON.parse(await blob.text());
+  if(p.type!=='GILRO_STUDIO_PROJECT'||p.version!==1||!Array.isArray(p.audios)||!Array.isArray(p.regions)||!Array.isArray(p.tracks))throw Error('지원하지 않는 프로젝트 파일입니다.');
+  const audios=p.audios.map(decodeBuffer);
+  const loadedBeat=audios[p.beatIndex];if(!loadedBeat)throw Error('비트 데이터가 없습니다.');
+  const loadedRegions=p.regions.map(({audioIndex,...r})=>{if(!audios[audioIndex])throw Error('보컬 오디오 데이터가 없습니다.');return {...r,buffer:audios[audioIndex]}});
+  pause();beat=loadedBeat;beatName=p.beatName||'';tracks=p.tracks;regions=loadedRegions;
+  nextId=p.nextId||Math.max(1,...tracks.map(t=>t.id),...regions.map(r=>r.id))+1;
+  active=p.active||tracks[0]?.id;playhead=clamp(p.playhead||0,0,dur());range=p.range||null;
+  selected=null;undoStack=[];projectName=safeName(p.name||file.name.replace(/\.gilro$/i,''));
+  $('beatName').textContent='선택한 비트: '+beatName;syncRange();applyMix(p.mix||mixDefaults);autoGain=p.autoGain??1;draw();dirty=false;
+  status('프로젝트 열기 완료 · 이어서 작업할 수 있어요.');
+ }catch(e){status('프로젝트 열기 실패: '+e.message)}
+}
+$('save').onclick=saveProject;
+$('restore').onclick=()=>$('projectFile').click();
+$('projectFile').onchange=e=>{const f=e.target.files[0];e.target.value='';openProject(f)};
+$('resetProject').onclick=()=>{if(!confirm('현재 작업을 지우고 새로 시작할까요? 저장하지 않은 내용은 사라집니다.'))return;pause();beat=null;beatName='';playhead=0;resetTracks();range=null;applyMix(mixDefaults);autoGain=1;$('beatName').textContent='비트를 선택하세요.';draw();dirty=false;projectName='우리들의랩';status('새 프로젝트 준비')};
 setInterval(()=>{if(playing&&time()>=dur()-.02){stopAudio();playhead=0}if(playing){$('clock').textContent=fmt(time());const x=px(time());document.querySelectorAll('.lane canvas').forEach(cv=>{ /* 재생 중 전체 재그리기는 낮은 빈도로 처리 */ })}},100);
 setInterval(()=>{if(playing)draw()},250);
-window.addEventListener('beforeunload',e=>{if(recording){e.preventDefault();e.returnValue=''}});
-resetTracks();draw();catalog();
+window.addEventListener('beforeunload',e=>{if(recording||dirty){e.preventDefault();e.returnValue=''}});
+applyMix(mixDefaults);resetTracks();draw();catalog();
 </script></body></html>
