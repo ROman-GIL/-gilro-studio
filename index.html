@@ -1,9 +1,28 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GILRO STUDIO</title><style>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GILRO STUDIO</title>
+<style>
 :root{font-family:system-ui,'Malgun Gothic',sans-serif;color:#f4f4f8;background:#0d0e13}*{box-sizing:border-box}body{margin:0}header{padding:28px max(20px,calc((100vw - 1050px)/2));background:linear-gradient(110deg,#202035,#101116);border-bottom:1px solid #363744}h1{margin:0;letter-spacing:.16em;font-size:clamp(26px,5vw,42px)}header p{color:#b7b9c9;margin:5px 0}main{max-width:1050px;margin:auto;padding:24px 16px 80px}.card{background:#191b24;border:1px solid #303342;border-radius:17px;padding:20px;margin:16px 0}h2{font-size:18px;margin:0 0 15px}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}button,input,select{font:inherit}button{border:0;border-radius:10px;padding:11px 15px;background:#34384b;color:white;cursor:pointer}button.primary{background:#ad70ff;color:#100a1a;font-weight:800}button.danger{background:#6e3344}button:disabled{opacity:.4;cursor:not-allowed}select,input[type=url],input[type=text]{background:#101219;color:#fff;border:1px solid #484b5c;border-radius:9px;padding:11px;max-width:100%}input[type=range]{accent-color:#ad70ff}.muted{color:#afb1c0;font-size:13px}.track{border:1px solid #353849;border-radius:12px;padding:12px;margin:10px 0;background:#11131b}.track .row{justify-content:space-between}.track canvas{width:100%;height:58px;background:#232637;border-radius:7px;margin-top:8px}.badge{color:#c79aff}label{display:inline-flex;gap:7px;align-items:center;margin:7px 14px 7px 0}.notice{background:#292438;border-left:3px solid #bb91ff;padding:12px;border-radius:8px}#status{min-height:24px;color:#c9a4ff}audio{width:100%;margin-top:10px}input[type=file]{max-width:100%}@media(max-width:600px){.card{padding:15px}button{padding:10px}}
-</style></head><body><header><h1>GILRO STUDIO</h1><p>YOUR VOICE. YOUR MUSIC. · 학생 랩 녹음실</p></header><main>
-<div class="card"><h2>01 · 비트 선택</h2><div class="row"><select id="beats"><option value="">비트를 선택하세요</option></select><button id="refresh">목록 새로고침</button></div><p class="muted">Google Drive 연동 전에는 아래에서 테스트 비트를 직접 선택할 수 있어요.</p><input id="beatFile" type="file" accept="audio/*,.mp3,.wav,.m4a"><div id="beatName" class="muted"></div></div>
-<div class="card"><h2>02 · 녹음</h2><p class="notice">🎧 이어폰을 연결하세요. 마이크 권한을 허용하고, 비트가 재생되는 동안 원하는 구간에서 녹음 버튼을 누르세요.</p><div class="row"><button id="play">▶ 비트 재생 / 일시정지</button><button id="record" class="primary">● 구간 녹음 시작</button><button id="stop" disabled>■ 녹음 종료</button><button id="reset">처음으로</button></div><p>비트 위치: <span id="clock">00:00</span> / <span id="duration">00:00</span></p><input id="seek" type="range" min="0" max="1000" value="0" style="width:100%"><p id="status">비트를 선택해 주세요.</p></div>
+/* 녹음 카운트다운 오버레이 */
+#countdownOverlay{position:fixed;inset:0;background:rgba(5,5,12,.86);z-index:1000;display:grid;place-items:center;text-align:center;pointer-events:all}
+#countdownOverlay[hidden]{display:none}
+#countdownNumber{font-size:clamp(110px,25vw,230px);font-weight:900;color:#c79aff;line-height:1;text-shadow:0 0 50px rgba(173,112,255,.5)}
+#countdownOverlay p{font-size:20px;font-weight:700}
+</style>
+</head>
+<body>
+<header><h1>GILRO STUDIO</h1><p>YOUR VOICE. YOUR MUSIC. · 학생 랩 녹음실</p></header>
+<main>
+<div class="card"><h2>01 · 비트 선택</h2><div class="row"><select id="beats"><option value="">비트를 선택하세요</option></select><button id="refresh">목록 새로고침</button></div><p class="muted">Google Drive 비트 목록을 불러옵니다. 아래에서 비트를 직접 선택할 수도 있어요.</p><input id="beatFile" type="file" accept="audio/*,.mp3,.wav,.m4a"><div id="beatName" class="muted"></div></div>
+<div class="card"><h2>02 · 녹음</h2><p class="notice">🎧 이어폰을 연결하세요. 마이크 권한을 허용하면 3초 카운트다운 후 녹음이 시작됩니다.</p><div class="row"><button id="play">▶ 비트 재생 / 일시정지</button><button id="record" class="primary">● 구간 녹음 시작</button><button id="stop" disabled>■ 녹음 종료</button><button id="reset">처음으로</button></div><p>비트 위치: <span id="clock">00:00</span> / <span id="duration">00:00</span></p><input id="seek" type="range" min="0" max="1000" value="0" style="width:100%"><p id="status">비트를 선택해 주세요.</p></div>
 <div class="card"><h2>03 · 녹음 트랙 <span class="badge" id="count">0</span></h2><div id="tracks" class="muted">녹음한 구간이 여기에 쌓입니다.</div></div>
 <div class="card"><h2>04 · 자동 믹싱</h2><div class="row"><button id="auto" class="primary">✨ 자동 믹싱 설정</button><button id="preview">▶ 믹싱 미리듣기</button><button id="export">⬇ WAV 다운로드</button></div><div><label>비트 <input id="beatGain" type="range" min="0" max="150" value="70"> <span id="bgv">70%</span></label><label>목소리 <input id="vocalGain" type="range" min="0" max="200" value="120"> <span id="vgv">120%</span></label><label>리버브 <input id="reverb" type="range" min="0" max="50" value="12"> <span id="rv">12%</span></label></div><p class="muted">자동 믹싱은 기본 EQ·컴프레서·리버브 프리셋입니다. AI 잡음 제거는 아직 지원하지 않습니다.</p><audio id="result" controls></audio></div>
-<footer class="muted">GILRO STUDIO 1.0 · 녹음 파일은 서버에 업로드하지 않고 현재 기기에서 처리합니다. 공유 기기에서는 작업 후 새로고침하세요.</footer></main>
-<script src="config.js"></script><script src="app.js"></script></body></html>
+<footer class="muted">GILRO STUDIO 2.0 · 녹음 파일은 서버에 업로드하지 않고 현재 기기에서 처리합니다. 공유 기기에서는 작업 후 새로고침하세요.</footer>
+</main>
+<div id="countdownOverlay" hidden aria-live="assertive"><div><div id="countdownNumber">3</div><p>녹음 준비!</p></div></div>
+<script src="config.js"></script><script src="app.js"></script>
+</body>
+</html>
